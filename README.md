@@ -162,6 +162,138 @@ Level_1_actual = era_950_1050.loc[df['recovery_strategy']=='Level 1 Recovery']['
 ... KruskalResult(statistic=30.246000000000038, pvalue=3.80575314300276e-08)
 ```
 
-<h3></h3>
-<h3></h3>
-<h3></h3>
+<h3>7. Regression modeling: no threshold</h3>
+<p>&nbsp;&nbsp; We now want to take a regression-based approach to estimate the 
+program impact at the $1000 threshold using data that is just above and below the threshold.</p>
+
+```python
+import statsmodels.api as sm
+
+X = era_900_1100.expected_recovery_amount
+y = era_900_1100.actual_recovery_amount
+X = sm.add_constant(X)
+
+model = sm.OLS(y, X).fit()
+predictions = model.predict(X)
+
+>>> print(model.summary())
+...
+```
+<pre>
+    OLS Regression Results                              
+==================================================================================
+Dep. Variable:     actual_recovery_amount   R-squared:                       0.261
+Model:                                OLS   Adj. R-squared:                  0.256
+Method:                     Least Squares   F-statistic:                     63.78
+Date:                    Thu, 20 May 2021   Prob (F-statistic):           1.56e-13
+Time:                            12:30:07   Log-Likelihood:                -1278.9
+No. Observations:                     183   AIC:                             2562.
+Df Residuals:                         181   BIC:                             2568.
+Df Model:                               1                                         
+Covariance Type:                nonrobust                                         
+============================================================================================
+                               coef    std err          t      P>|t|      [0.025      0.975]
+--------------------------------------------------------------------------------------------
+const                    -1978.7597    347.741     -5.690      0.000   -2664.907   -1292.612
+expected_recovery_amount     2.7577      0.345      7.986      0.000       2.076       3.439
+==============================================================================
+Omnibus:                       64.493   Durbin-Watson:                   1.777
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):              185.818
+Skew:                           1.463   Prob(JB):                     4.47e-41
+Kurtosis:                       6.977   Cond. No.                     1.80e+04
+==============================================================================
+</pre>
+
+
+<h3>8. Regression modeling: adding true threshold</h3>
+
+<p>&nbsp;&nbsp; From the first model, we see that the expected recovery amount's 
+regression coefficient is statistically significant.
+The second model adds an indicator of the 
+true threshold to the model (in this case at $1000).<br>If the higher recovery strategy helped recovery more money, 
+then the regression coefficient of the true threshold will be greater than zero. 
+If the higher recovery strategy did not help recovery more money, then the regression 
+coefficient will not be statistically significant. </p>
+
+# Create indicator (0 or 1) for expected recovery amount >= $1000
+df['indicator_1000'] = np.where(df['expected_recovery_amount']<1000, 0, 1)
+era_900_1100 = df.loc[(df['expected_recovery_amount']<1100) & 
+                      (df['expected_recovery_amount']>=900)]
+```python
+X = era_900_1100[['expected_recovery_amount','indicator_1000']]
+y = era_900_1100.actual_recovery_amount
+X = sm.add_constant(X)
+
+model = sm.OLS(y,X).fit()
+
+>>> print(model.summary())
+...
+```
+<pre>OLS Regression Results                              
+==================================================================================
+Dep. Variable:     actual_recovery_amount   R-squared:                       0.314
+Model:                                OLS   Adj. R-squared:                  0.307
+Method:                     Least Squares   F-statistic:                     41.22
+Date:                    Thu, 20 May 2021   Prob (F-statistic):           1.83e-15
+Time:                            12:30:07   Log-Likelihood:                -1272.0
+No. Observations:                     183   AIC:                             2550.
+Df Residuals:                         180   BIC:                             2560.
+Df Model:                               2                                         
+Covariance Type:                nonrobust                                         
+============================================================================================
+                               coef    std err          t      P>|t|      [0.025      0.975]
+--------------------------------------------------------------------------------------------
+const                        3.3440    626.274      0.005      0.996   -1232.440    1239.128
+expected_recovery_amount     0.6430      0.655      0.981      0.328      -0.650       1.936
+indicator_1000             277.6344     74.043      3.750      0.000     131.530     423.739
+==============================================================================
+Omnibus:                       65.977   Durbin-Watson:                   1.906
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):              186.537
+Skew:                           1.510   Prob(JB):                     3.12e-41
+Kurtosis:                       6.917   Cond. No.                     3.37e+04
+==============================================================================
+</pre>
+
+<h3>9. Regression modeling: adjusting the window</h3>
+
+<p>&nbsp;&nbsp; The regression coefficient for the true threshold was
+statistically significant with an estimated impact of around $278. 
+This is much larger than the $50 per customer needed to run this higher recovery strategy. 
+<br>
+Whether we use a wide ($900 to $1100) or narrower window ($950 to $1050),
+the incremental recovery amount at the higher recovery strategy is much
+greater than the $50 per customer it costs for the higher recovery strategy. 
+So we conclude that the higher recovery strategy is worth the 
+extra cost of $50 per customer.
+  
+  
+```python
+era_950_1050 = df.loc[(df['expected_recovery_amount']<1050) & 
+                      (df['expected_recovery_amount']>=950)]
+
+X = era_950_1050[['expected_recovery_amount','indicator_1000']]
+y = era_950_1050['actual_recovery_amount']
+X = sm.add_constant(X)
+
+model = sm.OLS(y,X).fit()
+
+>>> model.summary()
+...
+```
+<pre> OLS Regression Results Dep. Variable: 	actual_recovery_amount 	R-squared: 	0.283
+Model: 	OLS 	Adj. R-squared: 	0.269
+Method: 	Least Squares 	F-statistic: 	18.99
+Date: 	Thu, 20 May 2021 	Prob (F-statistic): 	1.12e-07
+Time: 	12:30:07 	Log-Likelihood: 	-692.92
+No. Observations: 	99 	AIC: 	1392.
+Df Residuals: 	96 	BIC: 	1400.
+Df Model: 	2 		
+Covariance Type: 	nonrobust 		
+	coef 	std err 	t 	P>|t| 	[0.025 	0.975]
+const 	-279.5243 	1840.707 	-0.152 	0.880 	-3933.298 	3374.250
+expected_recovery_amount 	0.9189 	1.886 	0.487 	0.627 	-2.825 	4.663
+indicator_1000 	286.5337 	111.352 	2.573 	0.012 	65.502 	507.566
+Omnibus: 	39.302 	Durbin-Watson: 	1.955
+Prob(Omnibus): 	0.000 	Jarque-Bera (JB): 	82.258
+Skew: 	1.564 	Prob(JB): 	1.37e-18
+Kurtosis: 	6.186 	Cond. No. 	6.81e+04</pre>
