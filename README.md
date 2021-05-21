@@ -117,8 +117,51 @@ chi2_stat, p_val, dof, ex = stats.chi2_contingency(crosstab)
 ```
 
 
-<h3></h3>
-<h3></h3>
+<h3>5. Exploratory graphical analysis: recovery amount</h3>
+<p>&nbsp;&nbsp; We are now reasonably confident that customers just above and just below the $1000 threshold are, on average, similar in their average age and the percentage that are male.</p>
+
+<p>&nbsp;&nbsp; It is now time to focus on the key outcome of interest, the actual recovery amoun
+</p>
+
+<p>&nbsp;&nbsp; Let's make a scatter plot of <code>Expected Recovery Amount</code> (X) 
+versus <code>Actual Recovery Amount</code> (Y) for Expected Recovery 
+Amounts between $900 to $1100. This range covers Levels 0 and 1. 
+A key question is whether or not we see a discontinuity (jump) around the $1000 threshold.
+</p>
+
+```python
+plt.scatter(x=df['expected_recovery_amount'], y=df['actual_recovery_amount'], c="g", s=2)
+plt.xlim(900, 1100)
+plt.ylim(0, 2000)
+plt.show()
+```
+<img src='https://github.com/shukkkur/Which-Debts-Are-Worth-the-Bank-s-Efforts/blob/d5ff98e9c1f7bc7c996f3a02b33c8081b1003e5d/datasets/secondScatter.jpg'>
+
+
+<h3>6. Statistical analysis: Recovery Amount</h3>
+
+<p>&nbsp;&nbsp; As we did with age, we can perform statistical tests to see if the actual recovery amount has a discontinuity above the $1000 threshold.<br>We will use the Kruskal-Wallis test, again.We will repeat the steps for a smaller window of $950 to $1050.</p>
+
+```python
+by_recovery_strategy['actual_recovery_amount'].describe().unstack()
+
+Level_0_actual = era_900_1100.loc[df['recovery_strategy']=='Level 0 Recovery']['actual_recovery_amount']
+Level_1_actual = era_900_1100.loc[df['recovery_strategy']=='Level 1 Recovery']['actual_recovery_amount']
+
+>>> print(stats.kruskal(Level_0_actual, Level_1_actual))
+... KruskalResult(statistic=65.37966302528878, pvalue=6.177308752803109e-16)
+
+# Repeat for a smaller range of $950 to $1050
+era_950_1050 = df.loc[(df['expected_recovery_amount']<1050) & 
+                      (df['expected_recovery_amount']>=950)]
+                      
+Level_0_actual = era_950_1050.loc[df['recovery_strategy']=='Level 0 Recovery']['actual_recovery_amount']
+Level_1_actual = era_950_1050.loc[df['recovery_strategy']=='Level 1 Recovery']['actual_recovery_amount']
+
+>>>print(stats.kruskal(Level_0_actual, Level_1_actual))
+... KruskalResult(statistic=30.246000000000038, pvalue=3.80575314300276e-08)
+```
+
 <h3></h3>
 <h3></h3>
 <h3></h3>
