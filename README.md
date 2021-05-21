@@ -215,11 +215,12 @@ then the regression coefficient of the true threshold will be greater than zero.
 If the higher recovery strategy did not help recovery more money, then the regression 
 coefficient will not be statistically significant. </p>
 
+```python
 # Create indicator (0 or 1) for expected recovery amount >= $1000
 df['indicator_1000'] = np.where(df['expected_recovery_amount']<1000, 0, 1)
 era_900_1100 = df.loc[(df['expected_recovery_amount']<1100) & 
                       (df['expected_recovery_amount']>=900)]
-```python
+
 X = era_900_1100[['expected_recovery_amount','indicator_1000']]
 y = era_900_1100.actual_recovery_amount
 X = sm.add_constant(X)
